@@ -20,6 +20,10 @@ module ActiveMerchant
       TEST_URL = 'https://testserver.datacash.com/Transaction'
       LIVE_URL = 'https://mars.transaction.datacash.com/Transaction'
 
+      # Datacash accreditation server URLs (for thirdman fraud checks)
+      TEST_ACCREDITATION_URL = 'https://accreditation.datacash.com/Transaction/cnp_a'
+      LIVE_ACCREDITATION_URL = LIVE_URL
+
       # Different Card Transaction Types
       AUTH_TYPE = 'auth'
       CANCEL_TYPE = 'cancel'
@@ -154,6 +158,11 @@ module ActiveMerchant
       # Is the gateway running in test mode?
       def test?
         @options[:test] || super
+      end
+      
+      # Is thirdman enabled?
+      def thirdman?
+        @options[:thirdman]
       end
 
       private                         
@@ -522,6 +531,18 @@ module ActiveMerchant
         end
       end
 
+      # Fetch the correct DataCash server url
+      #
+      # Returns:
+      #   -String: datacash server url
+      def datacash_url
+        if test?
+          thirdman? ? TEST_ACCREDITATION_URL : TEST_URL
+        else
+          thirdman? ? LIVE_ACCREDITATION_URL : LIVE_URL
+        end
+      end
+
       # Send the passed data to DataCash for processing
       # 
       # Parameters:
@@ -531,7 +552,7 @@ module ActiveMerchant
       #   - ActiveMerchant::Billing::Response object
       #   
       def commit(request)
-        response = parse(ssl_post(test? ? TEST_URL : LIVE_URL, request))      
+        response = parse(ssl_post(datacash_url, request))      
 
         Response.new(response[:status] == DATACASH_SUCCESS, response[:reason], response,
           :test => test?,
