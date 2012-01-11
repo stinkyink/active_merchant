@@ -304,7 +304,7 @@ module ActiveMerchant
               
               if fraud_services?
                 raise ArgumentError, "options[:customer_information] must contain some of the elements in section 2.4.7.1.2 CustomerInformation of the datacash developer guide" unless options[:customer_information]
-                add_fraud_data(xml, options[:customer_information], options[:billing_address], options[:address])
+                add_fraud_data(xml, options[:customer_information], options[:billing_address], options[:address], options[:order_lines])
               end
             end
           end
@@ -548,23 +548,23 @@ module ActiveMerchant
       # Returns:
       #   -none: The results are stored in the passed xml document
       #
-      def add_fraud_data(xml, customer_information, billing_address, delivery_address)
+      def add_fraud_data(xml, customer_information, billing_address, delivery_address, order_lines)
         
         xml.tag! :The3rdMan do
           
           if customer_information
             xml.tag! :CustomerInformation do
-              xml.tag! :order_number, customer_information[:order_number] unless customer_information[:order_number].blank?
+              xml.tag! :order_number,       customer_information[:order_number] unless customer_information[:order_number].blank?
               xml.tag! :customer_reference, customer_information[:customer_reference] unless customer_information[:order_number].blank?
-              xml.tag! :title, customer_information[:title] unless customer_information[:title].blank?
-              xml.tag! :forename, customer_information[:forename] unless customer_information[:forename].blank?
-              xml.tag! :surname, customer_information[:surname] unless customer_information[:surname].blank?
-              xml.tag! :delivery_title, customer_information[:delivery_title] unless customer_information[:delivery_title].blank?
-              xml.tag! :delivery_forename, customer_information[:delivery_forename] unless customer_information[:delivery_forename].blank?
-              xml.tag! :delivery_surname, customer_information[:delivery_surname] unless customer_information[:delivery_surname].blank?
-              xml.tag! :telephone, customer_information[:telephone] unless customer_information[:telephone].blank?
-              xml.tag! :email, customer_information[:email] unless customer_information[:email].blank?
-              xml.tag! :ip_address, customer_information[:ip_address] unless customer_information[:ip_address].blank?
+              xml.tag! :title,              customer_information[:title] unless customer_information[:title].blank?
+              xml.tag! :forename,           customer_information[:forename] unless customer_information[:forename].blank?
+              xml.tag! :surname,            customer_information[:surname] unless customer_information[:surname].blank?
+              xml.tag! :delivery_title,     customer_information[:delivery_title] unless customer_information[:delivery_title].blank?
+              xml.tag! :delivery_forename,  customer_information[:delivery_forename] unless customer_information[:delivery_forename].blank?
+              xml.tag! :delivery_surname,   customer_information[:delivery_surname] unless customer_information[:delivery_surname].blank?
+              xml.tag! :telephone,          customer_information[:telephone] unless customer_information[:telephone].blank?
+              xml.tag! :email,              customer_information[:email] unless customer_information[:email].blank?
+              xml.tag! :ip_address,         customer_information[:ip_address] unless customer_information[:ip_address].blank?
             end
           end
           
@@ -572,9 +572,9 @@ module ActiveMerchant
             xml.tag! :BillingAddress do
               xml.tag! :street_address_1, billing_address[:address1] unless billing_address[:address1].blank?
               xml.tag! :street_address_2, billing_address[:address2] unless billing_address[:address2].blank?
-              xml.tag! :city, billing_address[:city] unless billing_address[:city].blank?
-              xml.tag! :county, billing_address[:county] unless billing_address[:county].blank?
-              xml.tag! :postcode, billing_address[:zip] unless billing_address[:zip].blank?
+              xml.tag! :city,             billing_address[:city] unless billing_address[:city].blank?
+              xml.tag! :county,           billing_address[:county] unless billing_address[:county].blank?
+              xml.tag! :postcode,         billing_address[:zip] unless billing_address[:zip].blank?
             end
           end
           
@@ -582,9 +582,27 @@ module ActiveMerchant
             xml.tag! :DeliveryAddress do
               xml.tag! :street_address_1, delivery_address[:address1] unless delivery_address[:address1].blank?
               xml.tag! :street_address_2, delivery_address[:address2] unless delivery_address[:address2].blank?
-              xml.tag! :city, delivery_address[:city] unless delivery_address[:city].blank?
-              xml.tag! :county, delivery_address[:county] unless delivery_address[:county].blank?
-              xml.tag! :postcode, delivery_address[:zip] unless delivery_address[:zip].blank?
+              xml.tag! :city,             delivery_address[:city] unless delivery_address[:city].blank?
+              xml.tag! :county,           delivery_address[:county] unless delivery_address[:county].blank?
+              xml.tag! :postcode,         delivery_address[:zip] unless delivery_address[:zip].blank?
+            end
+          end
+          
+          if order_lines and order_lines.is_a?(Array)
+            xml.tag! :OrderInformation do
+              xml.tag! :Products, :count => order_lines.length do
+                for order_line in order_lines
+                  xml.tag! :Product do
+                    xml.tag! :code,             order_line[:code] unless order_line[:code].blank?
+                    xml.tag! :quantity,         order_line[:quantity] unless order_line[:quantity].blank?
+                    xml.tag! :price,            order_line[:price] unless order_line[:price].blank?
+                    xml.tag! :prod_description, order_line[:description] unless order_line[:description].blank?
+                    xml.tag! :prod_id,          order_line[:product_id] unless order_line[:product_id].blank?
+                    xml.tag! :prod_category,    order_line[:product_category] unless order_line[:product_category].blank?
+                    xml.tag! :prod_type,        order_line[:product_type] unless order_line[:product_type].blank?
+                  end
+                end
+              end
             end
           end
         end
