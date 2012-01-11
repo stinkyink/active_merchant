@@ -9,7 +9,13 @@ class DataCashTest < Test::Unit::TestCase
       :login => 'LOGIN',
       :password => 'PASSWORD'
     )
-
+    
+    @fraud_enabled_gateway = DataCashGateway.new(
+      :login => 'LOGIN',
+      :password => 'PASSWORD',
+      :fraud_services => true
+    )
+    
     @credit_card = credit_card('4242424242424242')
     
     @address = { 
@@ -27,6 +33,12 @@ class DataCashTest < Test::Unit::TestCase
       :order_id => generate_unique_id,
       :billing_address => @address
     }
+    
+    @fraud_options = @options.merge({
+      :customer_information => {
+        :order_number => generate_unique_id
+      }
+    })
   end
   
   def test_successful_purchase
@@ -116,7 +128,32 @@ class DataCashTest < Test::Unit::TestCase
     assert_equal 'The transaction was successful', response.message
   end
   
+  def test_fraud_services_disabled_by_default
+    assert_false @gateway.fraud_services? 
+  end
+  
+  def test_enable_fraud_services
+    assert @fraud_enabled_gateway.fraud_services?
+  end
+  
+  def test_fraud_services_payment_url
+    @fraud_enabled_gateway.expects(:ssl_post).with(DataCashGateway::TEST_FRAUD_URL, anything).returns(successful_purchase_response)
+    @fraud_enabled_gateway.authorize(@amount, @credit_card, @fraud_options)  
+  end
+  
+  def test_fraud_data_is_present_on_pre_auth_credit_card_transaction_request
+    @fraud_enabled_gateway.expects(:ssl_post).with(anything, regexp_matches(/<The3rdMan>/)).returns(successful_purchase_response)
+    @fraud_enabled_gateway.authorize(@amount, @credit_card, @fraud_options)  
+  end
+  
+  def test_purchase_raise_exception_with_missing_customer_information
+    assert_raise(ArgumentError){ 
+      @fraud_enabled_gateway.authorize(@amount, @credit_card, @fraud_options.delete(:customer_information))
+    }
+  end
+  
   private
+  
   def failed_purchase_response
     <<-XML
 <Response>
