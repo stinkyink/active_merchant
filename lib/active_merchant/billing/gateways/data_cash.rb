@@ -20,9 +20,9 @@ module ActiveMerchant
       TEST_URL = 'https://testserver.datacash.com/Transaction'
       LIVE_URL = 'https://mars.transaction.datacash.com/Transaction'
 
-      # Datacash accreditation server URLs (for thirdman fraud checks)
-      TEST_ACCREDITATION_URL = 'https://accreditation.datacash.com/Transaction/cnp_a'
-      LIVE_ACCREDITATION_URL = LIVE_URL
+      # Datacash fraud services server URLs
+      TEST_FRAUD_URL = 'https://accreditation.datacash.com/Transaction/cnp_a'
+      LIVE_FRAUD_URL = LIVE_URL
 
       # Different Card Transaction Types
       AUTH_TYPE = 'auth'
@@ -50,6 +50,7 @@ module ActiveMerchant
       # * <tt>:login</tt> -- The Datacash account login.
       # * <tt>:password</tt> -- The Datacash account password.
       # * <tt>:test => +true+ or +false+</tt> -- Use the test or live Datacash url.
+      # * <tt>:fraud_services => +true+ or +false+</tt> -- Enable Datacash fraud services.
       #     
       def initialize(options = {})
         requires!(options, :login, :password)
@@ -160,9 +161,9 @@ module ActiveMerchant
         @options[:test] || super
       end
       
-      # Is thirdman enabled?
-      def thirdman?
-        @options[:thirdman]
+      # Are fraud services enabled?
+      def fraud_services?
+        @options[:fraud_services]
       end
 
       private                         
@@ -531,15 +532,21 @@ module ActiveMerchant
         end
       end
 
+      
+      def add_fraud_data(xml, billing_address, delivery_address)
+        
+      end
+
+
       # Fetch the correct DataCash server url
       #
       # Returns:
       #   -String: datacash server url
       def datacash_url
         if test?
-          thirdman? ? TEST_ACCREDITATION_URL : TEST_URL
+          fraud_services? ? TEST_ACCREDITATION_URL : TEST_URL
         else
-          thirdman? ? LIVE_ACCREDITATION_URL : LIVE_URL
+          fraud_services? ? LIVE_ACCREDITATION_URL : LIVE_URL
         end
       end
 
