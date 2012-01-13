@@ -36,7 +36,17 @@ class DataCashTest < Test::Unit::TestCase
     
     @fraud_options = @options.merge({
       :customer_information => {
-        :order_number => generate_unique_id
+        :order_number       => 'ordernumber',
+        :customer_reference => 'customerreference',
+        :title              => 'Mr',
+        :forename           => 'Fred',
+        :surname            => 'Fake',
+        :delivery_title     => 'Mrs',
+        :delivery_forename  => 'Anon',
+        :delivery_surname   => 'Emoose',
+        :telephone          => '123456789',
+        :email              => 'fake@fakemail.com',
+        :ip_address         => '123456789'
       }
     })
   end
@@ -165,6 +175,13 @@ class DataCashTest < Test::Unit::TestCase
     assert_raise(ArgumentError){ 
       @fraud_enabled_gateway.authorize(@amount, @credit_card, @fraud_options.delete(:customer_information))
     }
+  end
+  
+  def test_fraud_data_attributes_exist
+    @fraud_options[:customer_information].each do |name, value|
+      @fraud_enabled_gateway.expects(:ssl_post).with(anything, regexp_matches(/<#{name}>#{value}/)).returns(successful_purchase_response)
+      @fraud_enabled_gateway.authorize(@amount, @credit_card, @fraud_options)
+    end
   end
   
   private
