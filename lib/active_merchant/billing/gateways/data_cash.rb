@@ -296,7 +296,7 @@ module ActiveMerchant
             end
             xml.tag! :CardTxn do
               xml.tag! :method, type
-              add_credit_card(xml, credit_card, options[:billing_address])
+              add_credit_card(xml, credit_card, options[:billing_address], options[:extended_policy] || {})
             end
             xml.tag! :TxnDetails do
               xml.tag! :merchantreference, format_reference_number(options[:order_id])
@@ -475,11 +475,11 @@ module ActiveMerchant
       #   -xml: Builder document that is being built up
       #   -credit_card: ActiveMerchant::Billing::CreditCard object
       #   -billing_address: Hash containing all of the billing address details
-      #   
+      #   -extended_policy: Hash containing optional cv2, postcode and address policy overrides
       # Returns:
       #   -none: The results is stored in the passed xml document
       #   
-      def add_credit_card(xml, credit_card, address)
+      def add_credit_card(xml, credit_card, address, extended_policy = {})
         
         xml.tag! :Card do
 
@@ -507,37 +507,36 @@ module ActiveMerchant
               xml.tag! :postcode, address[:zip] unless address[:zip].blank?
             end
 
-            # The ExtendedPolicy defines what to do when the passed data 
-            # matches, or not...
-            # 
-            # All of the following elements MUST be present for the
-            # xml to be valid (or can drop the ExtendedPolicy and use
-            # a predefined one
             xml.tag! :ExtendedPolicy do
-              xml.tag! :cv2_policy, 
-              :notprovided =>   POLICY_REJECT,
-              :notchecked =>    POLICY_REJECT,
-              :matched =>       POLICY_ACCEPT,
-              :notmatched =>    POLICY_REJECT,
-              :partialmatch =>  POLICY_REJECT
-              xml.tag! :postcode_policy,
-              :notprovided =>   POLICY_ACCEPT,
-              :notchecked =>    POLICY_ACCEPT,
-              :matched =>       POLICY_ACCEPT,
-              :notmatched =>    POLICY_REJECT,
-              :partialmatch =>  POLICY_ACCEPT
-              xml.tag! :address_policy, 
-              :notprovided =>   POLICY_ACCEPT,
-              :notchecked =>    POLICY_ACCEPT,
-              :matched =>       POLICY_ACCEPT,
-              :notmatched =>    POLICY_REJECT,
-              :partialmatch =>  POLICY_ACCEPT
+              xml.tag! :cv2_policy, { 
+                :notprovided  =>  POLICY_REJECT,
+                :notchecked   =>  POLICY_REJECT,
+                :matched      =>  POLICY_ACCEPT,
+                :notmatched   =>  POLICY_REJECT,
+                :partialmatch =>  POLICY_REJECT
+              }.merge(extended_policy[:cv2_policy] || {})
+              
+              xml.tag! :postcode_policy, {
+                :notprovided  => POLICY_ACCEPT,
+                :notchecked   => POLICY_ACCEPT,
+                :matched      => POLICY_ACCEPT,
+                :notmatched   => POLICY_REJECT,
+                :partialmatch => POLICY_ACCEPT
+              }.merge(extended_policy[:postcode_policy] || {})
+              
+              xml.tag! :address_policy, {
+                :notprovided  => POLICY_ACCEPT,
+                :notchecked   => POLICY_ACCEPT,
+                :matched      => POLICY_ACCEPT,
+                :notmatched   => POLICY_REJECT,
+                :partialmatch => POLICY_ACCEPT
+              }.merge(extended_policy[:address_policy] || {})
             end
           end
         end
       end
 
-      # Add add fraud data to the passed XML Builder doc
+      # Add fraud data to the passed XML Builder doc
       # 
       # Parameters:
       #   -xml: Builder document that is being built up
@@ -555,7 +554,7 @@ module ActiveMerchant
           if customer_information
             xml.tag! :CustomerInformation do
               xml.tag! :order_number,       customer_information[:order_number] unless customer_information[:order_number].blank?
-              xml.tag! :customer_reference, customer_information[:customer_reference] unless customer_information[:order_number].blank?
+              xml.tag! :customer_reference, customer_information[:customer_reference] unless customer_information[:customer_reference].blank?
               xml.tag! :title,              customer_information[:title] unless customer_information[:title].blank?
               xml.tag! :forename,           customer_information[:forename] unless customer_information[:forename].blank?
               xml.tag! :surname,            customer_information[:surname] unless customer_information[:surname].blank?

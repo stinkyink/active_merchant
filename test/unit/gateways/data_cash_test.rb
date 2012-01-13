@@ -128,6 +128,21 @@ class DataCashTest < Test::Unit::TestCase
     assert_equal 'The transaction was successful', response.message
   end
   
+  def test_override_cv2_extended_policy
+    @gateway.expects(:ssl_post).with(anything, regexp_matches(/cv2_policy notprovided="accept"/)).returns(successful_purchase_response)
+    @gateway.authorize(@amount, @credit_card, @options.merge(:extended_policy => {:cv2_policy => {:notprovided => DataCashGateway::POLICY_ACCEPT}}))
+  end
+  
+  def test_override_postcode_extended_policy
+    @gateway.expects(:ssl_post).with(anything, regexp_matches(/postcode_policy notprovided="reject"/)).returns(successful_purchase_response)
+    @gateway.authorize(@amount, @credit_card, @options.merge(:extended_policy => {:postcode_policy => {:notprovided => DataCashGateway::POLICY_REJECT}}))
+  end
+  
+  def test_override_address_extended_policy
+    @gateway.expects(:ssl_post).with(anything, regexp_matches(/address_policy notprovided="reject"/)).returns(successful_purchase_response)
+    @gateway.authorize(@amount, @credit_card, @options.merge(:extended_policy => {:address_policy => {:notprovided => DataCashGateway::POLICY_REJECT}}))
+  end
+  
   def test_fraud_services_disabled_by_default
     assert_false @gateway.fraud_services? 
   end
